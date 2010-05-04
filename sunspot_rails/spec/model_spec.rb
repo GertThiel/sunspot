@@ -116,7 +116,7 @@ describe 'ActiveRecord mixin' do
     end
     
     it 'should find ActiveRecord objects with an integer, not a string' do
-      Post.should_receive(:find_all_by_id).with([@post.id.to_i], anything).and_return([@post])
+      Post.should_receive(:all).with(hash_including(:conditions => { "id" => [@post.id.to_i] })).and_return([@post])
       Post.search do
         with :title, 'Test Post'
       end.results.should == [@post]
@@ -128,6 +128,24 @@ describe 'ActiveRecord mixin' do
         with :title, 'Test Post'
         data_accessor_for(Post).include = [:blog]
       end.results.should == [@post]
+    end
+
+    it 'should pass :include option from search call to data accessor' do
+      Post.should_receive(:find).with(anything(), hash_including(:include => [:blog])).and_return([@post])
+      Post.search(:include => [:blog]) do
+        with :title, 'Test Post'
+      end.results.should == [@post]
+    end
+    
+    it 'should use the select option from search call to data accessor' do
+      Post.should_receive(:find).with(anything(), hash_including(:select => 'title, published_at')).and_return([@post])
+      Post.search(:select => 'title, published_at') do
+        with :title, 'Test Post'
+      end.results.should == [@post]
+    end
+
+    it 'should not allow bogus options to search' do
+      lambda { Post.search(:bogus => :option) }.should raise_error(ArgumentError)
     end
     
     it 'should use the select option on the data accessor when specified' do
@@ -154,6 +172,14 @@ describe 'ActiveRecord mixin' do
       end.results.should == [@post]
     end
 
+    it 'should use an ActiveRecord object for coordinates' do
+      post = Post.new(:title => 'Test Post')
+      post.location = Location.create!(:lat => 40.0, :lng => -70.0)
+      post.save
+      post.index!
+      Post.search { near([40.0, -70.0], :distance => 1) }.results.should == [post]
+    end
+
   end
 
   describe 'search_ids()' do
@@ -169,7 +195,7 @@ describe 'ActiveRecord mixin' do
   
   describe 'searchable?()' do
     it 'should not be true for models that have not been configured for search' do
-      Blog.should_not be_searchable
+      Location.should_not be_searchable
     end
 
     it 'should be true for models that have been configured for search' do
@@ -317,6 +343,15 @@ describe 'ActiveRecord mixin' do
         end.and_return(@posts)
         Post.reindex(:include => [{:author => :address}])
       end
+      
+      it "should set the include option from the searchable options" do
+        @blogs = Array.new(10) { Blog.create }
+        Blog.should_receive(:all).with do |params|
+          params[:include].should == [{ :posts => :author }, :comments]
+          @blogs
+        end.and_return(@blogs)
+        Blog.reindex
+      end
 
       it "should commit after indexing each batch" do
         Sunspot.should_receive(:commit).twice
@@ -331,4 +366,44 @@ describe 'ActiveRecord mixin' do
     end
   end
   
+  describe "more_like_this()" do
+    before(:each) do
+      @posts = [
+        Post.create!(:title => 'Post123', :body => "one two three"),
+        Post.create!(:title => 'Post345', :body => "three four five"),
+        Post.create!(:title => 'Post456', :body => "four five six"),
+        Post.create!(:title => 'Post234', :body => "two three four"),
+      ]
+      @posts_with_auto = [
+        PostWithAuto.create!(:body => "one two three"),
+        PostWithAuto.create!(:body => "four five six")
+      ]
+      @posts.each { |p| p.index! }
+    end
+
+    it "should return results" do
+      @posts.first.more_like_this.results.should == [@posts[3], @posts[1]]
+    end
+
+    it "should return results for specified classes" do
+      @posts.first.more_like_this(Post, PostWithAuto).results.to_set.should ==
+        Set[@posts_with_auto[0], @posts[1], @posts[3]]
+    end
+  end
+
+  describe 'more_like_this_ids()' do
+    before :each do
+      @posts = [
+        Post.create!(:title => 'Post123', :body => "one two three"),
+        Post.create!(:title => 'Post345', :body => "three four five"),
+        Post.create!(:title => 'Post456', :body => "four five six"),
+        Post.create!(:title => 'Post234', :body => "two three four"),
+      ]
+      @posts.each { |p| p.index! }
+    end
+
+    it 'should return IDs' do
+      @posts.first.more_like_this_ids.to_set.should == [@posts[3], @posts[1]].map { |post| post.id }.to_set
+    end
+  end
 end

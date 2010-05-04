@@ -18,7 +18,7 @@ describe 'indexing attribute fields', :type => :indexer do
 
   it 'should correctly index a float attribute field' do
     session.index(post(:ratings_average => 2.23))
-    connection.should have_add_with(:average_rating_f => '2.23')
+    connection.should have_add_with(:average_rating_ft => '2.23')
   end
 
   it 'should correctly index a double attribute field' do
@@ -55,14 +55,14 @@ describe 'indexing attribute fields', :type => :indexer do
     session.index(
       post(:published_at => Time.parse('1983-07-08 05:00:00 -0400'))
     )
-    connection.should have_add_with(:published_at_d => '1983-07-08T09:00:00Z')
+    connection.should have_add_with(:published_at_dt => '1983-07-08T09:00:00Z')
   end
 
   it 'should correctly index a time field that\'s after 32-bit Y2K' do
     session.index(
       post(:published_at => DateTime.parse('2050-07-08 05:00:00 -0400'))
     )
-    connection.should have_add_with(:published_at_d => '2050-07-08T09:00:00Z')
+    connection.should have_add_with(:published_at_dt => '2050-07-08T09:00:00Z')
   end
 
   it 'should correctly index a date field' do
@@ -138,6 +138,12 @@ describe 'indexing attribute fields', :type => :indexer do
     lambda do
       Sunspot.setup(Post) { string :author_name }
       session.index(post(:author_name => ['Mat Brown', 'Matthew Brown']))
+    end.should raise_error(ArgumentError)
+  end
+
+  it 'should throw an ArgumentError if specifying more_like_this on type that does not support it' do
+    lambda do
+      Sunspot.setup(Post) { integer :popularity, :more_like_this => true }
     end.should raise_error(ArgumentError)
   end
 end

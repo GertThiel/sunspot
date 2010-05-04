@@ -23,12 +23,15 @@ module Mock
 
   class Connection
     attr_reader :adds, :commits, :searches, :message, :opts, :deletes_by_query
-    attr_writer :response
+    attr_accessor :response
+    attr_writer :expected_handler
+    undef_method :select # annoyingly defined on Object
 
     def initialize(opts = {})
       @opts = opts
       @message = OpenStruct.new
       @adds, @deletes, @deletes_by_query, @commits, @searches = Array.new(5) { [] }
+      @expected_handler = :select
     end
 
     def add(documents)
@@ -47,9 +50,16 @@ module Mock
       @commits << Time.now
     end
 
-    def select(request)
-      @searches << @last_search = request
+    def request(path, params)
+      unless path == "/#{@expected_handler}"
+        raise ArgumentError, "Expected request to #{@expected_handler} request handler"
+      end
+      @searches << @last_search = params
       @response || {}
+    end
+
+    def method_missing(method, *args, &block)
+      request("/#{method}", *args)
     end
 
     def has_add_with?(*documents)
@@ -81,16 +91,7 @@ module Mock
     end
 
     def has_last_search_with?(params)
-      return unless @last_search
-      if params.respond_to?(:all?)
-        params.all? do |key, value|
-          if @last_search.has_key?(key)
-            @last_search[key] == value
-          end
-        end
-      else
-        @last_search.has_key?(params)
-      end
+      with?(@last_search, params) if @last_search
     end
 
     def has_last_search_including?(key, *values)
@@ -101,6 +102,20 @@ module Mock
         elsif values.length == 1
           @last_search[key] == values.first
         end
+      end
+    end
+
+    private
+
+    def with?(request, params)
+      if params.respond_to?(:all?)
+        params.all? do |key, value|
+          if request.has_key?(key)
+            request[key] == value
+          end
+        end
+      else
+        request.has_key?(params)
       end
     end
   end

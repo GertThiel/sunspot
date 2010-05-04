@@ -243,7 +243,7 @@ module Sunspot
     #
     # Sunspot::Search::
     #   Search object, not yet executed. Query parameters can be added manually;
-    #   then #execute! should be called.
+    #   then #execute should be called.
     # 
     def new_search(*types, &block)
       session.new_search(*types, &block)
@@ -321,6 +321,14 @@ module Sunspot
     #
     def search(*types, &block)
       session.search(*types, &block)
+    end
+
+    def new_more_like_this(object, *types, &block)
+      session.new_more_like_this(object, *types, &block)
+    end
+
+    def more_like_this(object, *types, &block)
+      session.more_like_this(object, *types, &block)
     end
 
     # Remove objects from the index. Any time an object is destroyed, it must

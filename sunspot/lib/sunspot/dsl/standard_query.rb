@@ -8,7 +8,9 @@ module Sunspot
     #
     # See Sunspot.search for usage examples
     #
-    class Query < FieldQuery
+    class StandardQuery < FieldQuery
+      include Paginatable, Adjustable
+
       # Specify a phrase that should be searched as fulltext. Only +text+
       # fields are searched - see DSL::Fields.text
       #
@@ -53,7 +55,7 @@ module Sunspot
       #
       def fulltext(keywords, options = {}, &block)
         if keywords && !(keywords.to_s =~ /^\s*$/)
-          fulltext_query = @query.set_fulltext(keywords)
+          fulltext_query = @query.add_fulltext(keywords)
           if field_names = options.delete(:fields)
             Util.Array(field_names).each do |field_name|
               @setup.text_fields(field_name).each do |field|
@@ -101,54 +103,7 @@ module Sunspot
       end
       alias_method :keywords, :fulltext
 
-      # Paginate your search. This works the same way as WillPaginate's
-      # paginate().
       #
-      # Note that Solr searches are _always_ paginated. Not calling #paginate is
-      # the equivalent of calling:
-      #
-      #   paginate(:page => 1, :per_page => Sunspot.config.pagination.default_per_page)
-      #
-      # ==== Options (options)
-      #
-      # :page<Integer,String>:: The requested page. The default is 1.
-      #
-      # :per_page<Integer,String>::
-      #   How many results to return per page. The default is the value in
-      #   +Sunspot.config.pagination.default_per_page+
-      #
-      def paginate(options = {})
-        page = options.delete(:page)
-        per_page = options.delete(:per_page)
-        raise ArgumentError, "unknown argument #{options.keys.first.inspect} passed to paginate" unless options.empty?
-        @query.paginate(page, per_page)
-      end
-
-      # <strong>Expert:</strong> Adjust or reset the parameters passed to Solr.
-      # The adjustment will take place just before sending the params to solr,
-      # after Sunspot builds the Solr params based on the methods called in the
-      # DSL.
-      #
-      # Under normal circumstances, using this method should not be necessary;
-      # if you find that it is, please consider submitting a feature request.
-      # Using this method requires knowledge of Sunspot's internal Solr schema
-      # and Solr query representations, which are not part of Sunspot's public
-      # API; they could change at any time. <strong>This method is unsupported
-      # and your mileage may vary.</strong>
-      #
-      # ==== Example
-      #
-      #   Sunspot.search(Post) do
-      #     adjust_solr_params do |params|
-      #       params[:q] += ' AND something_s:more'
-      #     end
-      #   end
-      # 
-      def adjust_solr_params( &block )
-        @query.set_solr_parameter_adjustment( block )
-      end
-
-      # 
       # Scope the search by geographical distance from a given point.
       # +coordinates+ should either respond to #first and #last (e.g. a
       # two-element array), or to #lat and one of #lng, #lon, or #long.

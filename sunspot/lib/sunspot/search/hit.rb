@@ -1,5 +1,5 @@
 module Sunspot
-  class Search
+  module Search
     # 
     # Hit objects represent the raw information returned by Solr for a single
     # document. As well as the primary key and class name, hit objects give
@@ -30,10 +30,10 @@ module Sunspot
 
       attr_writer :result #:nodoc:
 
-      def initialize(raw_hit, highlights, search) #:nodoc:
+      def initialize(raw_hit, highlights, distance, search) #:nodoc:
         @class_name, @primary_key = *raw_hit['id'].match(/([^ ]+) (.+)/)[1..2]
         @score = raw_hit['score']
-        @distance = raw_hit['geo_distance'].to_f if raw_hit['geo_distance']
+        @distance = distance
         @search = search
         @stored_values = raw_hit
         @stored_cache = {}
@@ -91,9 +91,8 @@ module Sunspot
       # load their instances using the adapter's #load_all method.
       #
       def result
-        if @result.nil?
-          @search.populate_hits
-        end
+        return @result if defined?(@result)
+        @search.populate_hits
         @result
       end
       alias_method :instance, :result

@@ -167,6 +167,15 @@ module Sunspot
         new_search(*types).execute
       end
 
+      def more_like_this(object, &block)
+        #FIXME should use shards
+        new_more_like_this(object, &block).execute
+      end
+
+      def new_more_like_this(object, &block)
+        @search_session.new_more_like_this(object, &block)
+      end
+
       # 
       # True if any shard session is dirty. Note that directly using the
       # #commit_if_dirty method is more efficient if that's what you're

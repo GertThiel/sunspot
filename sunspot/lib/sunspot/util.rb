@@ -100,7 +100,8 @@ module Sunspot
       # as I know the behavior of Kernel.Array() is otherwise fine.
       #
       def Array(object)
-        if object.is_a?(String)
+        case object
+        when String, Hash
           [object]
         else
           super
@@ -164,7 +165,7 @@ module Sunspot
       #
       def deep_merge_into(destination, left, right)
         left.each_pair do |name, left_value|
-          right_value = right[name]
+          right_value = right[name] if right
           destination[name] =
             if right_value.nil? || left_value == right_value
               left_value
@@ -187,8 +188,8 @@ module Sunspot
       end
 
       def lat
-        if @coords.respond_to?(:[])
-          @coords[0]
+        if @coords.respond_to?(:first)
+          @coords.first
         elsif @coords.respond_to?(:lat)
           @coords.lat
         else
@@ -197,8 +198,8 @@ module Sunspot
       end
 
       def lng
-        if @coords.respond_to?(:[])
-          @coords[1]
+        if @coords.respond_to?(:last)
+          @coords.last
         elsif @coords.respond_to?(:lng)
           @coords.lng
         elsif @coords.respond_to?(:lon)
