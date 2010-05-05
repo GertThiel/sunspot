@@ -160,6 +160,19 @@ module Sunspot #:nodoc:
           (user_configuration_from_key('auto_commit_after_delete_request') || false)
       end
       
+      #
+      # Should the Sunspot methods be aliased.
+      # Default true
+      #
+      # ==== Returns
+      # 
+      # Boolean: alias_methods?
+      #
+      def alias_methods?
+        @alias_methods ||= 
+          user_configuration_from_key('alias_methods') != false
+      end
+      
       
       #
       # The log directory for solr logfiles

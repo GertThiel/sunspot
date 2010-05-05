@@ -102,14 +102,16 @@ module Sunspot #:nodoc:
       module ClassMethods
         def self.extended(base) #:nodoc:
           class <<base
-            alias_method :search, :solr_search unless method_defined? :search
-            alias_method :search_ids, :solr_search_ids unless method_defined? :search_ids
-            alias_method :remove_all_from_index, :solr_remove_all_from_index unless method_defined? :remove_all_from_index
-            alias_method :remove_all_from_index!, :solr_remove_all_from_index! unless method_defined? :remove_all_from_index!
-            alias_method :reindex, :solr_reindex unless method_defined? :reindex
-            alias_method :index, :solr_index unless method_defined? :index
-            alias_method :index_orphans, :solr_index_orphans unless method_defined? :index_orphans
-            alias_method :clean_index_orphans, :solr_clean_index_orphans unless method_defined? :clean_index_orphans
+            if Sunspot::Rails.configuration.alias_methods?
+              alias_method :search, :solr_search unless method_defined? :search
+              alias_method :search_ids, :solr_search_ids unless method_defined? :search_ids
+              alias_method :remove_all_from_index, :solr_remove_all_from_index unless method_defined? :remove_all_from_index
+              alias_method :remove_all_from_index!, :solr_remove_all_from_index! unless method_defined? :remove_all_from_index!
+              alias_method :reindex, :solr_reindex unless method_defined? :reindex
+              alias_method :index, :solr_index unless method_defined? :index
+              alias_method :index_orphans, :solr_index_orphans unless method_defined? :index_orphans
+              alias_method :clean_index_orphans, :solr_clean_index_orphans unless method_defined? :clean_index_orphans
+            end
           end
         end
         # 
@@ -329,12 +331,14 @@ module Sunspot #:nodoc:
       module InstanceMethods
         def self.included(base) #:nodoc:
           base.module_eval do
-            alias_method :index, :solr_index unless method_defined? :index
-            alias_method :index!, :solr_index! unless method_defined? :index!
-            alias_method :remove_from_index, :solr_remove_from_index unless method_defined? :remove_from_index
-            alias_method :remove_from_index!, :solr_remove_from_index! unless method_defined? :remove_from_index!
-            alias_method :more_like_this, :solr_more_like_this unless method_defined? :more_like_this
-            alias_method :more_like_this_ids, :solr_more_like_this_ids unless method_defined? :more_like_this_ids
+            if Sunspot::Rails.configuration.alias_methods?
+              alias_method :index, :solr_index unless method_defined? :index
+              alias_method :index!, :solr_index! unless method_defined? :index!
+              alias_method :remove_from_index, :solr_remove_from_index unless method_defined? :remove_from_index
+              alias_method :remove_from_index!, :solr_remove_from_index! unless method_defined? :remove_from_index!
+              alias_method :more_like_this, :solr_more_like_this unless method_defined? :more_like_this
+              alias_method :more_like_this_ids, :solr_more_like_this_ids unless method_defined? :more_like_this_ids
+            end
           end
         end
         # 
