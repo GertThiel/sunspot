@@ -76,7 +76,7 @@ module Sunspot #:nodoc:
 
             unless options[:auto_remove] == false
               after_destroy do |searchable|
-                searchable.remove_from_index
+                searchable.solr_remove_from_index
               end
             end
             options[:include] = Util::Array(options[:include])
